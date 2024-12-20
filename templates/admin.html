@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Infocom Org</title>
+    <!-- plugins:css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/feather/feather.css') }}">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/ti-icons/css/themify-icons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/vendor.bundle.base.css') }}">
+    <!-- endinject -->
+    <!-- Plugin css for this page -->
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='vendor/datatables.net-bs4/dataTables.bootstrap4.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/ti-icons/css/themify-icons.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='js/select.dataTables.min.css') }}">
+    <!-- End plugin css for this page -->
+    <!-- inject:css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/style.css') }}">
+    <!-- endinject -->
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.png') }}"/>
+
+    <style>
+
+        .Table {
+    display: none; /* Hidden by default */
+}
+
+.statistics {
+    display: block; /* Shown by default */
+}
+
+    </style>
+</head>
+
+<script src="{{ url_for('static', filename='vendor/jquery/jquery-3.2.1.min.js') }}"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var today = new Date(); // Gets the current date
+
+        // Options for the toLocaleDateString function
+        var options = {
+            weekday: 'long', // "Monday"
+            day: 'numeric', // "1"
+            month: 'long', // "January"
+            year: 'numeric' // "2021"
+        };
+
+        // Format the date to a more human-readable form
+        var formattedDate = today.toLocaleDateString('en-US', options);
+
+        // Update the content of the currentDate element
+        document.getElementById('currentDate').textContent = `Today (${formattedDate})`;
+    });
+
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/get_records_count')
+        .then(response => response.json())
+        .then(data => {
+            // Assuming the JSON response structure is { "count": 1234 }
+            document.getElementById('hrRecordsCount').textContent = data.count.hr;
+            document.getElementById('seRecordsCount').textContent = data.count.se;
+            document.getElementById('prRecordsCount').textContent = data.count.pr;
+            document.getElementById('empHrRecordsCount').textContent = data.count.emp_hr;
+            document.getElementById('empPrRecordsCount').textContent = data.count.emp_pr;
+            document.getElementById('empSeRecordsCount').textContent = data.count.emp_se;
+        })
+        .catch(error => console.error('Error fetching HR records count:', error));
+});
+
+</script>
+
+<script>
+    $(document).ready(function() {
+        $('#logout').click(function() {
+<!--            var username = $('input[name="email"]').val();  // Get the username input value-->
+<!--            var password = $('input[name="pass"]').val();   // Get the password input value-->
+
+            // Create an object to store the data
+            var data = {
+                'username': 'username',
+                'password': 'password'
+            };
+
+            // Send the data to a Flask route using AJAX
+            $.ajax({
+                type: 'POST',
+                url: '/logout',  // Replace with the actual route URL
+                data: JSON.stringify(data),
+                contentType: 'application/json',
+                success: function(response) {
+                    // Handle the response from the Flask route (e.g., redirect or display a message)
+                    window.location.href = response.redirect_url;
+                    console.log(response);
+
+<!--                    localStorage.setItem('username', response.username); // Use sessionStorage if you prefer-->
+
+                }
+            });
+        });
+    });
+
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var viewAllUsersButton = document.getElementById('viewAllUsersButton');
+
+    viewAllUsersButton.addEventListener('click', function () {
+        var statisticsSection = document.querySelector('.statistics');
+        var tableSection = document.querySelector('.Table');
+
+        statisticsSection.style.display = 'none';
+        tableSection.style.display = 'block';
+
+        fetch('/get_usernames')
+            .then(response => response.json()) // Parse the JSON from the response
+            .then(data => {
+                 console.log(data); // Check the structure of the response
+
+                 if (Array.isArray(data)) {
+                    initializeOrUpdateDataTable(data);
+                } else {
+                    console.error('Expected an array of users, but received:', data);
+                }
+            })
+            .catch(error => console.error('Error fetching user data:', error));
+    });
+});
+
+function initializeOrUpdateDataTable(users) {
+    // If the DataTable instance already exists, destroy it before reinitialization
+    if ($.fn.DataTable.isDataTable('#usersTable')) {
+        $('#usersTable').DataTable().clear().destroy();
+    }
+
+    $('#usersTable').DataTable({
+        data: users.map(user => [
+            user.username, // Adjust according to your user object structure
+            user.role,
+            `<button onclick="deleteUser('${user.username}', '${user.role}')">Delete</button>`,
+            `<button onclick="updateUser('${user.username}', '${user.role}')">Change Role</button>`,
+            `<button onclick="addUserDetails('${user.username}', '${user.role}')">Add Details</button>`
+        ]),
+        columns: [
+            { title: "Username" },
+            { title: "Role" },
+            { title: "Action One" },
+            { title: "Action Two" },
+            { title: "Action Three" }
+        ]
+    });
+}
+
+
+function updateUser(username, role) {
+    // Define the data you want to send
+    const data = { username: username, role: role };
+
+    console.log(data);
+
+    $.ajax({
+                type: 'POST',
+                url: '/update_user',  // Replace with the actual route URL
+                data: JSON.stringify(data),
+                contentType: 'application/json',
+                success: function(response) {
+                    console.log(response);
+                    // Handle the response from the Flask route (e.g., redirect or display a message)
+                    window.location.href = response.redirect_url;
+                    console.log(response);
+
+                }
+            });
+}
+
+
+
+
+function addUserDetails(username, role) {
+    // Define the data you want to send
+    const data = { username: username, role: role };
+
+    console.log(data);
+
+    $.ajax({
+        type: 'POST',
+        url: '/add_data',  // Replace with the actual route URL
+        data: JSON.stringify(data),
+        contentType: 'application/json',
+        success: function(response) {
+            console.log(response);
+            // Handle the response from the Flask route (e.g., redirect or display a message)
+            window.location.href = response.redirect_url;
+            console.log(response);
+        }
+    });
+}
+
+
+function deleteUser(username, role) {
+    console.log('Delete user with ID:', username);
+    // Implement the delete functionality here
+    // This might involve sending a request to the backend to delete the user, then refreshing the table data
+
+    if (!confirm(`Are you sure you want to delete the user ${username} with role ${role}?`)) {
+        return; // Stop if the user cancels
+    }
+
+    const url = '/delete';
+
+    // Options for the fetch request
+    const options = {
+        method: 'POST', // Specify the request method
+        headers: {
+            'Content-Type': 'application/json', // Specify the content type in the headers
+            // Include any other headers your API requires, like authentication tokens
+        },
+        // If your API requires sending the role or additional data in the request body for deletion, include it here
+        body: JSON.stringify({ username: username, role: role }), // Convert the data to a JSON string
+
+    };
+
+    // Make the fetch request
+    fetch(url, options)
+        .then(response => {
+            if (!response.ok) { // Check if the response is not OK (200-299)
+                throw new Error('Network response was not ok');
+            }
+            return response.json(); // Parse the JSON from the response
+        })
+        .then(data => {
+            // Handle success
+            console.log('User deleted:', data);
+            // Optionally, refresh the table or remove the user row from the DOM to reflect the deletion
+            // You might need to reinitialize or update your DataTable here
+        })
+        .catch(error => {
+            // Handle errors, such as network issues or server errors
+            console.error('Error deleting user:', error);
+        });
+
+}
+
+
+
+</script>
+
+<body>
+<div class="container-scroller">
+    <!-- partial:partials/_navbar.html -->
+    <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
+        <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
+            <!--        <a class="navbar-brand brand-logo mr-5" href="index.html"><img src="{{ url_for('static', filename='images/logo.svg') }}" class="mr-2" alt="logo"/></a>-->
+            <a class="navbar-brand brand-logo-mini" href="index.html"><img
+                    src="{{ url_for('static', filename='images/logo-mini.svg') }}" alt="logo"/></a>
+        </div>
+        <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+            <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
+                <span class="icon-menu"></span>
+            </button>
+            <ul class="navbar-nav mr-lg-2">
+                <li class="nav-item nav-search d-none d-lg-block">
+                    <div class="input-group">
+                        <div class="input-group-prepend hover-cursor" id="navbar-search-icon">
+                <span class="input-group-text" id="search">
+                  <i class="icon-search"></i>
+                </span>
+                        </div>
+                        <input type="text" class="form-control" id="navbar-search-input" placeholder="Search now"
+                               aria-label="search" aria-describedby="search">
+                    </div>
+                </li>
+            </ul>
+            <ul class="navbar-nav navbar-nav-right">
+                <li class="nav-item dropdown">
+                    <a class="nav-link count-indicator dropdown-toggle" id="notificationDropdown" href="#"
+                       data-toggle="dropdown">
+                        <i class="icon-bell mx-0"></i>
+                        <span class="count"></span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list"
+                         aria-labelledby="notificationDropdown">
+                        <p class="mb-0 font-weight-normal float-left dropdown-header">Notifications</p>
+                        <a class="dropdown-item preview-item">
+                            <div class="preview-thumbnail">
+                                <div class="preview-icon bg-success">
+                                    <i class="ti-info-alt mx-0"></i>
+                                </div>
+                            </div>
+                            <div class="preview-item-content">
+                                <h6 class="preview-subject font-weight-normal">Application Error</h6>
+                                <p class="font-weight-light small-text mb-0 text-muted">
+                                    Just now
+                                </p>
+                            </div>
+                        </a>
+                        <a class="dropdown-item preview-item">
+                            <div class="preview-thumbnail">
+                                <div class="preview-icon bg-warning">
+                                    <i class="ti-settings mx-0"></i>
+                                </div>
+                            </div>
+                            <div class="preview-item-content">
+                                <h6 class="preview-subject font-weight-normal">Settings</h6>
+                                <p class="font-weight-light small-text mb-0 text-muted">
+                                    Private message
+                                </p>
+                            </div>
+                        </a>
+                        <a class="dropdown-item preview-item">
+                            <div class="preview-thumbnail">
+                                <div class="preview-icon bg-info">
+                                    <i class="ti-user mx-0"></i>
+                                </div>
+                            </div>
+                            <div class="preview-item-content">
+                                <h6 class="preview-subject font-weight-normal">New user registration</h6>
+                                <p class="font-weight-light small-text mb-0 text-muted">
+                                    2 days ago
+                                </p>
+                            </div>
+                        </a>
+                    </div>
+                </li>
+                <li class="nav-item nav-profile dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown">
+                        <img src="{{ url_for('static', filename='images/faces/face29.jpg') }}" alt="profile"/>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
+                        <a class="dropdown-item">
+                            <i class="ti-settings text-primary"></i>
+                            Settings
+                        </a>
+                        <a class="dropdown-item" id="logout">
+                            <i class="ti-power-off text-primary"></i>
+                            Logout
+                        </a>
+                    </div>
+                </li>
+                <li class="nav-item nav-settings d-none d-lg-flex">
+                    <a class="nav-link" href="#">
+                        <i class="icon-ellipsis"></i>
+                    </a>
+                </li>
+            </ul>
+            <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button"
+                    data-toggle="offcanvas">
+                <span class="icon-menu"></span>
+            </button>
+        </div>
+    </nav>
+    <!-- partial -->
+    <div class="container-fluid page-body-wrapper">
+        <!-- partial:partials/_settings-panel.html -->
+        <div class="theme-setting-wrapper">
+            <div id="settings-trigger"><i class="ti-settings"></i></div>
+            <div id="theme-settings" class="settings-panel">
+                <i class="settings-close ti-close"></i>
+                <p class="settings-heading">SIDEBAR SKINS</p>
+                <div class="sidebar-bg-options selected" id="sidebar-light-theme">
+                    <div class="img-ss rounded-circle bg-light border mr-3"></div>
+                    Light
+                </div>
+                <div class="sidebar-bg-options" id="sidebar-dark-theme">
+                    <div class="img-ss rounded-circle bg-dark border mr-3"></div>
+                    Dark
+                </div>
+                <p class="settings-heading mt-2">HEADER SKINS</p>
+                <div class="color-tiles mx-0 px-4">
+                    <div class="tiles success"></div>
+                    <div class="tiles warning"></div>
+                    <div class="tiles danger"></div>
+                    <div class="tiles info"></div>
+                    <div class="tiles dark"></div>
+                    <div class="tiles default"></div>
+                </div>
+            </div>
+        </div>
+        <div id="right-sidebar" class="settings-panel">
+            <i class="settings-close ti-close"></i>
+            <ul class="nav nav-tabs border-top" id="setting-panel" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="todo-tab" data-toggle="tab" href="#todo-section" role="tab"
+                       aria-controls="todo-section" aria-expanded="true">TO DO LIST</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="chats-tab" data-toggle="tab" href="#chats-section" role="tab"
+                       aria-controls="chats-section">CHATS</a>
+                </li>
+            </ul>
+            <div class="tab-content" id="setting-content">
+                <div class="tab-pane fade show active scroll-wrapper" id="todo-section" role="tabpanel"
+                     aria-labelledby="todo-section">
+                    <div class="add-items d-flex px-3 mb-0">
+                        <form class="form w-100">
+                            <div class="form-group d-flex">
+                                <input type="text" class="form-control todo-list-input" placeholder="Add To-do">
+                                <button type="submit" class="add btn btn-primary todo-list-add-btn" id="add-task">Add
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="list-wrapper px-3">
+                        <ul class="d-flex flex-column-reverse todo-list">
+                            <li>
+                                <div class="form-check">
+                                    <label class="form-check-label">
+                                        <input class="checkbox" type="checkbox">
+                                        Team review meeting at 3.00 PM
+                                    </label>
+                                </div>
+                                <i class="remove ti-close"></i>
+                            </li>
+                            <li>
+                                <div class="form-check">
+                                    <label class="form-check-label">
+                                        <input class="checkbox" type="checkbox">
+                                        Prepare for presentation
+                                    </label>
+                                </div>
+                                <i class="remove ti-close"></i>
+                            </li>
+                            <li>
+                                <div class="form-check">
+                                    <label class="form-check-label">
+                                        <input class="checkbox" type="checkbox">
+                                        Resolve all the low priority tickets due today
+                                    </label>
+                                </div>
+                                <i class="remove ti-close"></i>
+                            </li>
+                            <li class="completed">
+                                <div class="form-check">
+                                    <label class="form-check-label">
+                                        <input class="checkbox" type="checkbox" checked>
+                                        Schedule meeting for next week
+                                    </label>
+                                </div>
+                                <i class="remove ti-close"></i>
+                            </li>
+                            <li class="completed">
+                                <div class="form-check">
+                                    <label class="form-check-label">
+                                        <input class="checkbox" type="checkbox" checked>
+                                        Project review
+                                    </label>
+                                </div>
+                                <i class="remove ti-close"></i>
+                            </li>
+                        </ul>
+                    </div>
+                    <h4 class="px-3 text-muted mt-5 font-weight-light mb-0">Events</h4>
+                    <div class="events pt-4 px-3">
+                        <div class="wrapper d-flex mb-2">
+                            <i class="ti-control-record text-primary mr-2"></i>
+                            <span>Feb 11 2018</span>
+                        </div>
+                        <p class="mb-0 font-weight-thin text-gray">Creating component page build a js</p>
+                        <p class="text-gray mb-0">The total number of sessions</p>
+                    </div>
+                    <div class="events pt-4 px-3">
+                        <div class="wrapper d-flex mb-2">
+                            <i class="ti-control-record text-primary mr-2"></i>
+                            <span>Feb 7 2018</span>
+                        </div>
+                        <p class="mb-0 font-weight-thin text-gray">Meeting with Alisa</p>
+                        <p class="text-gray mb-0 ">Call Sarah Graves</p>
+                    </div>
+                </div>
+                <!-- To do section tab ends -->
+                <div class="tab-pane fade" id="chats-section" role="tabpanel" aria-labelledby="chats-section">
+                    <div class="d-flex align-items-center justify-content-between border-bottom">
+                        <p class="settings-heading border-top-0 mb-3 pl-3 pt-0 border-bottom-0 pb-0">Friends</p>
+                        <small class="settings-heading border-top-0 mb-3 pt-0 border-bottom-0 pb-0 pr-3 font-weight-normal">See
+                            All</small>
+                    </div>
+                    <ul class="chat-list">
+                        <li class="list active">
+                            <div class="profile"><img src="{{ url_for('static', filename='images/faces/face1.jpg') }}"
+                                                      alt="image"><span class="online"></span></div>
+                            <div class="info">
+                                <p>Thomas Douglas</p>
+                                <p>Available</p>
+                            </div>
+                            <small class="text-muted my-auto">19 min</small>
+                        </li>
+                        <li class="list">
+                            <div class="profile"><img src="{{ url_for('static', filename='images/faces/face2.jpg') }}"
+                                                      alt="image"><span class="offline"></span></div>
+                            <div class="info">
+                                <div class="wrapper d-flex">
+                                    <p>Catherine</p>
+                                </div>
+                                <p>Away</p>
+                            </div>
+                            <div class="badge badge-success badge-pill my-auto mx-2">4</div>
+                            <small class="text-muted my-auto">23 min</small>
+                        </li>
+                        <li class="list">
+                            <div class="profile"><img src="{{ url_for('static', filename='images/faces/face3.jpg') }}"
+                                                      alt="image"><span class="online"></span></div>
+                            <div class="info">
+                                <p>Daniel Russell</p>
+                                <p>Available</p>
+                            </div>
+                            <small class="text-muted my-auto">14 min</small>
+                        </li>
+                        <li class="list">
+                            <div class="profile"><img src="{{ url_for('static', filename='images/faces/face4.jpg') }}"
+                                                      alt="image"><span class="offline"></span></div>
+                            <div class="info">
+                                <p>James Richardson</p>
+                                <p>Away</p>
+                            </div>
+                            <small class="text-muted my-auto">2 min</small>
+                        </li>
+                        <li class="list">
+                            <div class="profile"><img src="{{ url_for('static', filename='images/faces/face5.jpg') }}"
+                                                      alt="image"><span class="online"></span></div>
+                            <div class="info">
+                                <p>Madeline Kennedy</p>
+                                <p>Available</p>
+                            </div>
+                            <small class="text-muted my-auto">5 min</small>
+                        </li>
+                        <li class="list">
+                            <div class="profile"><img src="{{ url_for('static', filename='images/faces/face6.jpg') }}"
+                                                      alt="image"><span class="online"></span></div>
+                            <div class="info">
+                                <p>Sarah Graves</p>
+                                <p>Available</p>
+                            </div>
+                            <small class="text-muted my-auto">47 min</small>
+                        </li>
+                    </ul>
+                </div>
+                <!-- chat tab ends -->
+            </div>
+        </div>
+        <!-- partial -->
+        <!-- partial:partials/_sidebar.html -->
+        <nav class="sidebar sidebar-offcanvas" id="sidebar">
+            <ul class="nav">
+                <li class="nav-item">
+                    <!--            <a class="nav-link" href="{{ url_for('static', filename='index.html') }}">-->
+                    <i class="icon-grid menu-icon"></i>
+                    <span class="menu-title">Admin Dashboard</span>
+                    <!--            </a>-->
+                </li>
+                <br>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="" aria-expanded="false" aria-controls="ui-basic">
+                        <i class="icon-layout menu-icon"></i>
+                        <span class="menu-title">Home</span>
+                        <!--              <i class="menu-arrow"></i>-->
+                    </a>
+
+                </li>
+
+                <li class="nav-item">
+
+                    <a class="nav-link" href="/new_user" aria-expanded="false" aria-controls="ui-basic">
+                        <i class="icon-layout menu-icon"></i>
+                        <span class="menu-title">New User</span>
+                        <!--              <i class="menu-arrow"></i>-->
+                    </a>
+
+                </li>
+<!--                <li class="nav-item">-->
+<!--                    <a class="nav-link" href="update_user" aria-expanded="false"-->
+<!--                       aria-controls="form-elements">-->
+<!--                        <i class="icon-columns menu-icon"></i>-->
+<!--                        <span class="menu-title">Update User</span>-->
+<!--                        &lt;!&ndash;              <i class="menu-arrow"></i>&ndash;&gt;-->
+<!--                    </a>-->
+
+<!--                </li>-->
+<!--                <li class="nav-item">-->
+<!--                    <a class="nav-link" data-toggle="collapse" href="#charts" aria-expanded="false"-->
+<!--                       aria-controls="charts">-->
+<!--                        <i class="icon-bar-graph menu-icon"></i>-->
+<!--                        <span class="menu-title">Delete User</span>-->
+<!--                        &lt;!&ndash;              <i class="menu-arrow"></i>&ndash;&gt;-->
+<!--                    </a>-->
+
+<!--                </li>-->
+
+                <br>
+                <br>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="collapse" href="#charts" aria-expanded="false"
+                       id="viewAllUsersButton">
+                        <i class="icon-bar-graph menu-icon"></i>
+                        <span class="menu-title">View All Users</span>
+                    </a>
+
+                </li>
+            </ul>
+        </nav>
+        <!-- partial -->
+        <div class="main-panel">
+            <div class="content-wrapper">
+                <div class="statistics">
+                <div class="row">
+                    <div class="col-md-12 grid-margin">
+                        <div class="row">
+                            <div class="col-12 col-xl-8 mb-4 mb-xl-0">
+                                <h3 class="font-weight-bold" id="username">Welcome {{username}}</h3>
+                                <!--                  <h6 class="font-weight-normal mb-0">All systems are running smoothly! You have <span class="text-primary">3 unread alerts!</span></h6>-->
+                            </div>
+                            <div class="col-12 col-xl-4">
+                                <div class="justify-content-end d-flex">
+                                    <div class="dropdown flex-md-grow-1 flex-xl-grow-0">
+                                        <button class="btn btn-sm btn-light bg-white dropdown-toggle" type="button"
+                                                id="dropdownMenuDate2" data-toggle="dropdown" aria-haspopup="true"
+                                                aria-expanded="true">
+                                            <i class="mdi mdi-calendar"></i> <span id="currentDate">Today</span>
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-right"
+                                             aria-labelledby="dropdownMenuDate2">
+                                            <a class="dropdown-item" href="#">January - March</a>
+                                            <a class="dropdown-item" href="#">March - June</a>
+                                            <a class="dropdown-item" href="#">June - August</a>
+                                            <a class="dropdown-item" href="#">August - November</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 grid-margin transparent">
+                        <div class="row">
+                            <div class="col-md-6 mb-4 stretch-card transparent">
+                                <div class="card card-tale">
+                                    <div class="card-body">
+                                        <p class="mb-4">HR Records</p>
+                                        <p class="fs-30 mb-2 recordsCount" id="hrRecordsCount" data-record-type="hr">4006</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4 stretch-card transparent">
+                                <div class="card card-dark-blue">
+                                    <div class="card-body">
+                                        <p class="mb-4">SE Records</p>
+                                        <p class="fs-30 mb-2 recordsCount" id="seRecordsCount" data-record-type="se">61344</p>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+
+                        </div>
+                        <div class="row">
+
+                            <div class="col-md-6 mb-4 stretch-card transparent">
+                                <div class="card card-dark-blue">
+                                    <div class="card-body">
+                                        <p class="mb-4">PR Records</p>
+                                        <p class="fs-30 mb-2 recordsCount" id="prRecordsCount" data-record-type="pr">61344</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="col-md-6 grid-margin transparent">
+                        <div class="row">
+                            <div class="col-md-6 mb-4 stretch-card transparent">
+                                <div class="card card-tale">
+                                    <div class="card-body">
+                                        <p class="mb-4">EMP HR Records</p>
+                                        <p class="fs-30 mb-2 recordsCount" id="empHrRecordsCount" data-record-type="emphr">4006</p>
+                                        <!--                      <p>10.00% (30 days)</p>-->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4 stretch-card transparent">
+                                <div class="card card-dark-blue">
+                                    <div class="card-body">
+                                        <p class="mb-4">EMP PR Records</p>
+                                        <p class="fs-30 mb-2 recordsCount" id="empPrRecordsCount" data-record-type="emppr">61344</p>
+                                        <!--                      <p>22.00% (30 days)</p>-->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-4 mb-lg-0 stretch-card transparent">
+                                <div class="card card-light-blue">
+                                    <div class="card-body">
+                                        <p class="mb-4">EMP SE Records</p>
+                                        <p class="fs-30 mb-2 recordsCount" id="empSeRecordsCount" data-record-type="empse">34040</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div id="hrTablePlaceholder" class="table-responsive" style="display: none;"></div><br><br>
+                    <div id="emphrTablePlaceholder" class="table-responsive" style="display: none;"></div><br><br>
+                    <div id="seTablePlaceholder" class="table-responsive" style="display: none;"></div><br><br>
+                    <div id="empseTablePlaceholder" class="table-responsive" style="display: none;"></div><br><br>
+                    <div id="prTablePlaceholder" class="table-responsive" style="display: none;"></div><br><br>
+                    <div id="empprTablePlaceholder" class="table-responsive" style="display: none;"></div>
+
+
+                </div>
+                </div>
+                <div class="Table">
+                <table id="usersTable" class="display">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Action One</th> <!-- Column for update/delete buttons -->
+                            <th>Action Two</th> <!-- Column for update/delete buttons -->
+                            <th>Action Three</th> <!-- Column for update/delete buttons -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be inserted here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            </div>
+
+            <footer class="footer">
+                <div class="d-sm-flex justify-content-center justify-content-sm-between">
+
+                </div>
+            </footer>
+            <!-- partial -->
+        </div>
+        <!-- main-panel ends -->
+    </div>
+    <!-- page-body-wrapper ends -->
+</div>
+<!-- container-scroller -->
+
+<!-- plugins:js -->
+<script src="{{ url_for('static', filename='vendor/js/vendor.bundle.base.js') }}"></script>
+<!-- endinject -->
+<!-- Plugin js for this page -->
+<script src="{{ url_for('static', filename='vendor/chart.js/Chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/datatables.net/jquery.dataTables.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/datatables.net-bs4/dataTables.bootstrap4.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dataTables.select.min_1.js') }}"></script>
+
+<!-- End plugin js for this page -->
+<!-- inject:js -->
+<script src="{{ url_for('static', filename='js/off-canvas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/hoverable-collapse.js') }}"></script>
+<script src="{{ url_for('static', filename='js/template.js') }}"></script>
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+<script src="{{ url_for('static', filename='js/todolist.js') }}"></script>
+<!-- endinject -->
+<!-- Custom js for this page-->
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/Chart.roundedBarCharts.js') }}"></script>
+<!-- End custom js for this page-->
+
+<!-- Include jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+
+<!-- DataTables -->
+<script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+
+
+<script>
+
+    $(document).ready(function() {
+    $(".recordsCount").on('click', function() {
+        // Get the record type from the data attribute
+        var recordType = $(this).data("record-type");
+        var placeholderId = "#" + recordType + "TablePlaceholder";
+
+        // Determine the URL based on recordType
+        var url = "/get_" + recordType + "_records"; // Adjust this based on your actual URL structure
+
+        // Fetch data from the backend
+        $.ajax({
+            type: 'GET',
+            url: url,
+            success: function(data) {
+                // Assuming 'data' is an array of records
+                var tableHtml = '<table class="table"><thead><tr>';
+
+                // Add table headers based on keys from the first data item
+                if(data.length > 0) {
+                    Object.keys(data[0]).forEach(function(key) {
+                        tableHtml += '<th>' + key.toUpperCase() + '</th>';
+                    });
+                    tableHtml += '<th>ACTIONS</th></tr></thead><tbody>';
+
+                    // Add data rows
+                    data.forEach(function(item) {
+                        tableHtml += '<tr>';
+                        Object.values(item).forEach(function(value) {
+                            tableHtml += '<td>' + value + '</td>';
+                        });
+
+<!--                        tableHtml += '<td><button onclick="updateUser1()">Update</button><br><button onclick="deleteUser1()">Delete</button></td></tr>';-->
+                            tableHtml += '<td><button onclick="updateUser1(\'' + item.id + '\', \'' + recordType + '\');">Update</button><br><button onclick="deleteUser1(\'' + item.id + '\', \'' + recordType + '\');">Delete</button></td></tr>';
+
+                    });
+                    tableHtml += '</tbody></table>';
+
+                    // Insert the table into the placeholder and show it
+                    $(placeholderId).html(tableHtml).show();
+                } else {
+                    // Handle no data case
+                    $(placeholderId).html('<p>No records found.</p>').show();
+                }
+            },
+            error: function(error) {
+                // Handle error case
+                console.error('Error fetching records:', error);
+                $(placeholderId).html('<p>Error fetching records.</p>').show();
+            }
+        });
+    });
+});
+
+
+
+function deleteUser1(UID, RT) {
+    console.log('Delete user with ID:', UID);
+    // Implement the delete functionality here
+    // This might involve sending a request to the backend to delete the user, then refreshing the table data
+
+    if (!confirm(`Are you sure you want to delete the ID ${UID} from table ${RT}?`)) {
+        return; // Stop if the user cancels
+    }
+
+    const url = '/delete';
+
+    // Options for the fetch request
+    const options = {
+        method: 'POST', // Specify the request method
+        headers: {
+            'Content-Type': 'application/json', // Specify the content type in the headers
+            // Include any other headers your API requires, like authentication tokens
+        },
+        // If your API requires sending the role or additional data in the request body for deletion, include it here
+        body: JSON.stringify({ uid: UID, rt: RT }), // Convert the data to a JSON string
+
+    };
+
+    // Make the fetch request
+    fetch(url, options)
+        .then(response => {
+            if (!response.ok) { // Check if the response is not OK (200-299)
+                throw new Error('Network response was not ok');
+            }
+            return response.json(); // Parse the JSON from the response
+        })
+        .then(data => {
+            // Handle success
+            console.log('User deleted:', data);
+            // Optionally, refresh the table or remove the user row from the DOM to reflect the deletion
+            // You might need to reinitialize or update your DataTable here
+        })
+        .catch(error => {
+            // Handle errors, such as network issues or server errors
+            console.error('Error deleting user:', error);
+        });
+
+}
+
+
+function updateUser1(UID, RT) {
+    // Define the data you want to send
+    const data = { uid: UID, rt: RT };
+
+    console.log(data);
+
+    $.ajax({
+                type: 'POST',
+                url: '/update_user',  // Replace with the actual route URL
+                data: JSON.stringify(data),
+                contentType: 'application/json',
+                success: function(response) {
+                    console.log(response);
+                    // Handle the response from the Flask route (e.g., redirect or display a message)
+                    window.location.href = response.redirect_url;
+                    console.log(response);
+
+                }
+            });
+}
+
+</script>
+</body>
+
+</html>
+
